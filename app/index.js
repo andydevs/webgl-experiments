@@ -4,7 +4,7 @@
  * Author:  Anshul Kharbanda
  * Created: 04 - 27 - 2021
  */
-import { Matrix4 } from 'matrixgl';
+import { Matrix4, Vector3 } from 'matrixgl';
 import './style/main.scss'
 
 const vertexShaderCode = `
@@ -32,21 +32,82 @@ const fragmentShaderCode = `
 
 // Model vertices!
 const vertices = [
-    -0.5, -0.5,
-    -0.5,  0.5,
-     0.5,  0.5,
-     0.5, -0.5
+    // Front Face
+    -1.0, -1.0,  1.0,
+    -1.0,  1.0,  1.0,
+     1.0,  1.0,  1.0,
+     1.0, -1.0,  1.0,
+
+    // Bacl Face
+    -1.0, -1.0, -1.0,
+    -1.0,  1.0, -1.0,
+     1.0,  1.0, -1.0,
+     1.0, -1.0, -1.0,
+
+    // Left Face
+    -1.0, -1.0,  1.0,
+    -1.0,  1.0,  1.0,
+    -1.0,  1.0, -1.0,
+    -1.0, -1.0, -1.0,
+
+    // Right face
+     1.0, -1.0,  1.0,
+     1.0,  1.0,  1.0,
+     1.0,  1.0, -1.0,
+     1.0, -1.0, -1.0,
+
+    // Top face
+    -1.0,  1.0,  1.0,
+    -1.0,  1.0, -1.0,
+     1.0,  1.0, -1.0,
+     1.0,  1.0,  1.0,
+
+    // Bottom Face
+    -1.0, -1.0,  1.0,
+    -1.0, -1.0, -1.0,
+     1.0, -1.0, -1.0,
+     1.0, -1.0,  1.0
 ]
-const numVertexDimensions = 2;
+const numVertexDimensions = 3;
 const colors = [
-    0.0,  0.67, 1.0, 1.0,
-    0.0,  0.0,  0.0, 1.0,
-    0.67, 0.0,  1.0, 1.0,
-    0.0,  1.0, 0.67, 1.0
+    0.0, 0.0, 0.0, 1.0,
+    0.5, 0.0, 0.0, 1.0,
+    1.0, 0.0, 0.0, 1.0,
+    0.5, 0.5, 0.0, 1.0,
+
+    0.0, 1.0, 0.0, 1.0,
+    0.5, 1.0, 0.0, 1.0,
+    1.0, 1.0, 0.0, 1.0,
+    0.5, 0.5, 0.5, 1.0,
+    
+    0.0, 0.0, 1.0, 1.0,
+    0.5, 0.0, 1.0, 1.0,
+    1.0, 0.0, 1.0, 1.0,
+    0.5, 0.5, 1.0, 1.0,
+    
+    0.0, 1.0, 1.0, 1.0,
+    0.0, 0.5, 0.5, 1.0,
+    0.0, 0.0, 0.0, 1.0,
+    0.5, 0.0, 0.0, 1.0,
+    
+    1.0, 0.0, 0.0, 1.0,
+    0.5, 0.5, 0.0, 1.0,
+    0.0, 1.0, 0.0, 1.0,
+    0.5, 1.0, 0.0, 1.0,
+    
+    1.0, 0.0, 1.0, 1.0,
+    0.5, 0.5, 1.0, 1.0,
+    0.0, 1.0, 1.0, 1.0,
+    0.0, 0.5, 0.5, 1.0,
 ]
 const numColorDimensions = 4
 const indeces = [
-    0, 1, 2,    0, 2, 3
+    0,  1,  2,    0,  2,  3,
+    4,  5,  6,    4,  6,  7,
+    8,  9,  10,   8,  10, 11,
+    12, 13, 14,   12, 14, 15,
+    16, 17, 18,   16, 18, 19,
+    20, 21, 22,   20, 22, 23
 ]
 
 // Get opengl context
@@ -100,11 +161,12 @@ let indexBuffer = gl.createBuffer()
 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indeces), gl.STATIC_DRAW)
 
-let time = 0.0
-
-function draw() {
+function render(time) {
     // Opengl clear
     gl.clearColor(0.0, 0.0, 0.0, 0.0)
+    gl.clearDepth(1.0)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
     gl.clear(gl.COLOR_BUFFER_BIT)
 
     // Set program
@@ -112,10 +174,10 @@ function draw() {
 
     // Matrices
     const transformMatrix = Matrix4.identity()
-        .rotateZ(time)
         .translate(0, 0, -6)
+        .rotateAround(new Vector3(1.5, -0.75, 1.5).normalize(), 2*time)
     const projectionMatrix = Matrix4.perspective({
-        fovYRadian: Math.PI / 6,
+        fovYRadian: Math.PI / 4,
         aspectRatio: gl.canvas.clientWidth / gl.canvas.clientHeight,
         near: 1,
         far: 100
@@ -129,7 +191,7 @@ function draw() {
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
     gl.vertexAttribPointer(vertexColor, numColorDimensions, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(vertexColor)
-   
+
     // Set uniforms
     gl.uniformMatrix4fv(projectionMatrix_, false, projectionMatrix.values)
     gl.uniformMatrix4fv(transformMatrix_, false, transformMatrix.values)
@@ -137,9 +199,15 @@ function draw() {
     // Fingers crossed this works
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
     gl.drawElements(gl.TRIANGLES, indeces.length, gl.UNSIGNED_SHORT, 0)
-
-    // Update
-    time += 0.02
-    requestAnimationFrame(draw)
 }
-draw()
+
+// Animation loop
+let time = 0.0
+function animate() {
+    render(time)
+    
+    // Update
+    time += 0.01
+    requestAnimationFrame(animate)
+}
+animate()
