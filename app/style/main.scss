@@ -10,8 +10,12 @@
         Verdana, sans-serif;
 }
 
+#app {
+    text-align: center;
+}
+
 #webgl-canvas {
-    width: 800px;
-    height: 600px;
     border: 1px solid #ccc;
+    width: 100%;
+    max-width: 1280px;
 }
