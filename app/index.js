@@ -4,16 +4,20 @@
  * Author:  Anshul Kharbanda
  * Created: 04 - 27 - 2021
  */
+import { Matrix4 } from 'matrixgl';
 import './style/main.scss'
 
 const vertexShaderCode = `
     attribute vec4 aVertexPosition;
     attribute vec4 aVertexColor;
 
+    uniform mat4 uTransformMatrix;
+    uniform mat4 uProjectionMatrix;
+
     varying lowp vec4 vColor;
 
     void main() {
-        gl_Position = aVertexPosition;
+        gl_Position = uProjectionMatrix * uTransformMatrix * aVertexPosition;
         vColor = aVertexColor;
     }
 `
@@ -29,16 +33,21 @@ const fragmentShaderCode = `
 // Model vertices!
 const vertices = [
     -0.5, -0.5,
-     0.0,  0.5,
+    -0.5,  0.5,
+     0.5,  0.5,
      0.5, -0.5
 ]
 const numVertexDimensions = 2;
 const colors = [
     0.0,  0.67, 1.0, 1.0,
     0.0,  0.0,  0.0, 1.0,
-    0.67, 0.0,  1.0, 1.0
+    0.67, 0.0,  1.0, 1.0,
+    0.0,  1.0, 0.67, 1.0
 ]
 const numColorDimensions = 4
+const indeces = [
+    0, 1, 2,    0, 2, 3
+]
 
 // Get opengl context
 let canvas = document.getElementById('webgl-canvas')
@@ -77,6 +86,8 @@ if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
 // Get shader arguments
 let vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition')
 let vertexColor = gl.getAttribLocation(shaderProgram, 'aVertexColor')
+let projectionMatrix_ = gl.getUniformLocation(shaderProgram, 'uProjectionMatrix')
+let transformMatrix_ = gl.getUniformLocation(shaderProgram, 'uTransformMatrix')
 
 // Create buffers
 let positionBuffer = gl.createBuffer()
@@ -85,28 +96,50 @@ gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
 let colorBuffer = gl.createBuffer()
 gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
+let indexBuffer = gl.createBuffer()
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indeces), gl.STATIC_DRAW)
 
-// Clear
+let time = 0.0
+
 function draw() {
     // Opengl clear
     gl.clearColor(0.0, 0.0, 0.0, 0.0)
     gl.clear(gl.COLOR_BUFFER_BIT)
 
-    // Add vertex attribute array
-    let type = gl.FLOAT
-    let normalize = false;
-    let stride = 0;
-    let offset = 0;
+    // Set program
+    gl.useProgram(shaderProgram)
+
+    // Matrices
+    const transformMatrix = Matrix4.identity()
+        .rotateZ(time)
+        .translate(0, 0, -6)
+    const projectionMatrix = Matrix4.perspective({
+        fovYRadian: Math.PI / 6,
+        aspectRatio: gl.canvas.clientWidth / gl.canvas.clientHeight,
+        near: 1,
+        far: 100
+    })
+
+    // Set attribute arrays
+    // type: FLOAT, normalize: false, stride: 0, offset: 0
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-    gl.vertexAttribPointer(vertexPosition, numVertexDimensions, type, normalize, stride, offset)
+    gl.vertexAttribPointer(vertexPosition, numVertexDimensions, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(vertexPosition)
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
-    gl.vertexAttribPointer(vertexColor, numColorDimensions, type, normalize, stride, offset)
+    gl.vertexAttribPointer(vertexColor, numColorDimensions, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(vertexColor)
-
+   
+    // Set uniforms
+    gl.uniformMatrix4fv(projectionMatrix_, false, projectionMatrix.values)
+    gl.uniformMatrix4fv(transformMatrix_, false, transformMatrix.values)
+    
     // Fingers crossed this works
-    gl.useProgram(shaderProgram)
-    let numPositions = vertices.length / numVertexDimensions
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, numPositions)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+    gl.drawElements(gl.TRIANGLES, indeces.length, gl.UNSIGNED_SHORT, 0)
+
+    // Update
+    time += 0.02
+    requestAnimationFrame(draw)
 }
 draw()
