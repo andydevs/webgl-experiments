@@ -42,6 +42,6 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "matrixgl": "^1.0.1"
+    "gl-matrix": "^3.3.0"
   }
 }

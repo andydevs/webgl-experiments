@@ -4,29 +4,48 @@
  * Author:  Anshul Kharbanda
  * Created: 04 - 27 - 2021
  */
-import { Matrix4, Vector3 } from 'matrixgl';
+import { mat4, vec3 } from "gl-matrix";
 import './style/main.scss'
 
 const vertexShaderCode = `
     attribute vec4 aVertexPosition;
+    attribute vec3 aVertexNormal;
     attribute vec4 aVertexColor;
 
+    uniform mat4 uNormalMatrix;
     uniform mat4 uTransformMatrix;
     uniform mat4 uProjectionMatrix;
 
-    varying lowp vec4 vColor;
+    varying highp vec4 vColor;
+    varying highp vec3 vLighting;
 
     void main() {
         gl_Position = uProjectionMatrix * uTransformMatrix * aVertexPosition;
         vColor = aVertexColor;
+
+        // Ambient light
+        highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+
+        // Directional light
+        highp vec3 directionalLightColor = vec3(1, 1, 1);
+        highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+
+        // Get directional light amount
+        highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+        highp float directionalValue = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+        highp vec3 directionalLight = directionalLightColor * directionalValue;
+
+        // Total light amount
+        vLighting = ambientLight + directionalLight;
     }
 `
 
 const fragmentShaderCode = `
-    varying lowp vec4 vColor;
+    varying lowp vec3 vLighting;
 
     void main() {
-        gl_FragColor = vColor;
+        lowp vec3 defaultColor = vec3(0.0, 0.67, 1.0);
+        gl_FragColor = vec4(defaultColor * vLighting, 1.0);
     }
 `
 
@@ -69,6 +88,44 @@ const vertices = [
      1.0, -1.0,  1.0
 ]
 const numVertexDimensions = 3;
+const normals = [
+    // Front
+    0.0, 0.0, 1.0,
+    0.0, 0.0, 1.0,
+    0.0, 0.0, 1.0,
+    0.0, 0.0, 1.0,
+
+    // Back
+    0.0, 0.0, -1.0,
+    0.0, 0.0, -1.0,
+    0.0, 0.0, -1.0,
+    0.0, 0.0, -1.0,
+
+    // Left
+    -1.0, 0.0, 0.0,
+    -1.0, 0.0, 0.0,
+    -1.0, 0.0, 0.0,
+    -1.0, 0.0, 0.0,
+
+    // Right
+    1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+
+    // Top
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+
+    // Bottom
+    0.0, -1.0, 0.0,
+    0.0, -1.0, 0.0,
+    0.0, -1.0, 0.0,
+    0.0, -1.0, 0.0
+]
+const numNormalDimensions = 3
 const colors = [
     0.0, 0.0, 0.0, 1.0,
     0.5, 0.0, 0.0, 1.0,
@@ -145,18 +202,19 @@ if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
 }
 
 // Get shader arguments
-let vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition')
-let vertexColor = gl.getAttribLocation(shaderProgram, 'aVertexColor')
+let vertexPosition_ = gl.getAttribLocation(shaderProgram, 'aVertexPosition')
+let vertexNormal_ = gl.getAttribLocation(shaderProgram, 'aVertexNormal')
 let projectionMatrix_ = gl.getUniformLocation(shaderProgram, 'uProjectionMatrix')
 let transformMatrix_ = gl.getUniformLocation(shaderProgram, 'uTransformMatrix')
+let normalMatrix_ = gl.getUniformLocation(shaderProgram, 'uNormalMatrix')
 
 // Create buffers
 let positionBuffer = gl.createBuffer()
 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
-let colorBuffer = gl.createBuffer()
-gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
+let normalBuffer = gl.createBuffer()
+gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer)
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW)
 let indexBuffer = gl.createBuffer()
 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indeces), gl.STATIC_DRAW)
@@ -172,29 +230,35 @@ function render(time) {
     // Set program
     gl.useProgram(shaderProgram)
 
-    // Matrices
-    const transformMatrix = Matrix4.identity()
-        .translate(0, 0, -6)
-        .rotateAround(new Vector3(1.5, -0.75, 1.5).normalize(), 2*time)
-    const projectionMatrix = Matrix4.perspective({
-        fovYRadian: Math.PI / 4,
-        aspectRatio: gl.canvas.clientWidth / gl.canvas.clientHeight,
-        near: 1,
-        far: 100
-    })
+    // Transform matrix
+    const transformMatrix = mat4.create()
+    mat4.translate(transformMatrix, transformMatrix, [0, 0, -6])
+    mat4.rotate(transformMatrix, transformMatrix, 2*time, [1.5, -0.75, 1.5])
 
-    // Set attribute arrays
+    // Projection matrix
+    const projectionMatrix = mat4.create()
+    mat4.perspective(projectionMatrix, Math.PI / 4, gl.canvas.clientWidth / gl.canvas.clientHeight, 1, 100)
+
+    // Normal matrix
+    const normalMatrix = mat4.create()
+    mat4.invert(normalMatrix, transformMatrix)
+    mat4.transpose(normalMatrix, normalMatrix)
+
+    // Set position attribute
     // type: FLOAT, normalize: false, stride: 0, offset: 0
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-    gl.vertexAttribPointer(vertexPosition, numVertexDimensions, gl.FLOAT, false, 0, 0)
-    gl.enableVertexAttribArray(vertexPosition)
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
-    gl.vertexAttribPointer(vertexColor, numColorDimensions, gl.FLOAT, false, 0, 0)
-    gl.enableVertexAttribArray(vertexColor)
+    gl.vertexAttribPointer(vertexPosition_, numVertexDimensions, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(vertexPosition_)
+
+    // Set normal attribute
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer)
+    gl.vertexAttribPointer(vertexNormal_, numNormalDimensions, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(vertexNormal_)
 
     // Set uniforms
-    gl.uniformMatrix4fv(projectionMatrix_, false, projectionMatrix.values)
-    gl.uniformMatrix4fv(transformMatrix_, false, transformMatrix.values)
+    gl.uniformMatrix4fv(projectionMatrix_, false, projectionMatrix)
+    gl.uniformMatrix4fv(transformMatrix_, false, transformMatrix)
+    gl.uniformMatrix4fv(normalMatrix_, false, normalMatrix)
     
     // Fingers crossed this works
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
