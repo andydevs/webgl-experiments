@@ -14,7 +14,7 @@ void main() {
     vColor = aVertexColor;
 
     // Ambient light
-    highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+    highp vec3 ambientLight = vec3(0.2, 0.2, 0.2);
 
     // Directional light
     highp vec3 directionalLightColor = vec3(1, 1, 1);
