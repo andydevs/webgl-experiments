@@ -4,168 +4,11 @@
  * Author:  Anshul Kharbanda
  * Created: 04 - 27 - 2021
  */
-import { mat4, vec3 } from "gl-matrix";
+import { mat4 } from "gl-matrix"
+import * as cube from './cubemodel'
+import vertexShaderCode from './cube.vs'
+import fragmentShaderCode from './cube.fs'
 import './style/main.scss'
-
-const vertexShaderCode = `
-    attribute vec4 aVertexPosition;
-    attribute vec3 aVertexNormal;
-    attribute vec4 aVertexColor;
-
-    uniform mat4 uNormalMatrix;
-    uniform mat4 uTransformMatrix;
-    uniform mat4 uProjectionMatrix;
-
-    varying highp vec4 vColor;
-    varying highp vec3 vLighting;
-
-    void main() {
-        gl_Position = uProjectionMatrix * uTransformMatrix * aVertexPosition;
-        vColor = aVertexColor;
-
-        // Ambient light
-        highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
-
-        // Directional light
-        highp vec3 directionalLightColor = vec3(1, 1, 1);
-        highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
-
-        // Get directional light amount
-        highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
-        highp float directionalValue = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-        highp vec3 directionalLight = directionalLightColor * directionalValue;
-
-        // Total light amount
-        vLighting = ambientLight + directionalLight;
-    }
-`
-
-const fragmentShaderCode = `
-    varying lowp vec3 vLighting;
-
-    void main() {
-        lowp vec3 defaultColor = vec3(0.0, 0.67, 1.0);
-        gl_FragColor = vec4(defaultColor * vLighting, 1.0);
-    }
-`
-
-// Model vertices!
-const vertices = [
-    // Front Face
-    -1.0, -1.0,  1.0,
-    -1.0,  1.0,  1.0,
-     1.0,  1.0,  1.0,
-     1.0, -1.0,  1.0,
-
-    // Bacl Face
-    -1.0, -1.0, -1.0,
-    -1.0,  1.0, -1.0,
-     1.0,  1.0, -1.0,
-     1.0, -1.0, -1.0,
-
-    // Left Face
-    -1.0, -1.0,  1.0,
-    -1.0,  1.0,  1.0,
-    -1.0,  1.0, -1.0,
-    -1.0, -1.0, -1.0,
-
-    // Right face
-     1.0, -1.0,  1.0,
-     1.0,  1.0,  1.0,
-     1.0,  1.0, -1.0,
-     1.0, -1.0, -1.0,
-
-    // Top face
-    -1.0,  1.0,  1.0,
-    -1.0,  1.0, -1.0,
-     1.0,  1.0, -1.0,
-     1.0,  1.0,  1.0,
-
-    // Bottom Face
-    -1.0, -1.0,  1.0,
-    -1.0, -1.0, -1.0,
-     1.0, -1.0, -1.0,
-     1.0, -1.0,  1.0
-]
-const numVertexDimensions = 3;
-const normals = [
-    // Front
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-    0.0, 0.0, 1.0,
-
-    // Back
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-    0.0, 0.0, -1.0,
-
-    // Left
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0,
-
-    // Right
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0,
-
-    // Top
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0,
-
-    // Bottom
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0,
-    0.0, -1.0, 0.0
-]
-const numNormalDimensions = 3
-const colors = [
-    0.0, 0.0, 0.0, 1.0,
-    0.5, 0.0, 0.0, 1.0,
-    1.0, 0.0, 0.0, 1.0,
-    0.5, 0.5, 0.0, 1.0,
-
-    0.0, 1.0, 0.0, 1.0,
-    0.5, 1.0, 0.0, 1.0,
-    1.0, 1.0, 0.0, 1.0,
-    0.5, 0.5, 0.5, 1.0,
-    
-    0.0, 0.0, 1.0, 1.0,
-    0.5, 0.0, 1.0, 1.0,
-    1.0, 0.0, 1.0, 1.0,
-    0.5, 0.5, 1.0, 1.0,
-    
-    0.0, 1.0, 1.0, 1.0,
-    0.0, 0.5, 0.5, 1.0,
-    0.0, 0.0, 0.0, 1.0,
-    0.5, 0.0, 0.0, 1.0,
-    
-    1.0, 0.0, 0.0, 1.0,
-    0.5, 0.5, 0.0, 1.0,
-    0.0, 1.0, 0.0, 1.0,
-    0.5, 1.0, 0.0, 1.0,
-    
-    1.0, 0.0, 1.0, 1.0,
-    0.5, 0.5, 1.0, 1.0,
-    0.0, 1.0, 1.0, 1.0,
-    0.0, 0.5, 0.5, 1.0,
-]
-const numColorDimensions = 4
-const indeces = [
-    0,  1,  2,    0,  2,  3,
-    4,  5,  6,    4,  6,  7,
-    8,  9,  10,   8,  10, 11,
-    12, 13, 14,   12, 14, 15,
-    16, 17, 18,   16, 18, 19,
-    20, 21, 22,   20, 22, 23
-]
 
 // Get opengl context
 let canvas = document.getElementById('webgl-canvas')
@@ -211,13 +54,13 @@ let normalMatrix_ = gl.getUniformLocation(shaderProgram, 'uNormalMatrix')
 // Create buffers
 let positionBuffer = gl.createBuffer()
 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW)
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.vertices), gl.STATIC_DRAW)
 let normalBuffer = gl.createBuffer()
 gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer)
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW)
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.normals), gl.STATIC_DRAW)
 let indexBuffer = gl.createBuffer()
 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indeces), gl.STATIC_DRAW)
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cube.indeces), gl.STATIC_DRAW)
 
 function render(time) {
     // Opengl clear
@@ -247,12 +90,12 @@ function render(time) {
     // Set position attribute
     // type: FLOAT, normalize: false, stride: 0, offset: 0
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-    gl.vertexAttribPointer(vertexPosition_, numVertexDimensions, gl.FLOAT, false, 0, 0)
+    gl.vertexAttribPointer(vertexPosition_, cube.numVertexDimensions, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(vertexPosition_)
 
     // Set normal attribute
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer)
-    gl.vertexAttribPointer(vertexNormal_, numNormalDimensions, gl.FLOAT, false, 0, 0)
+    gl.vertexAttribPointer(vertexNormal_, cube.numNormalDimensions, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(vertexNormal_)
 
     // Set uniforms
@@ -262,7 +105,7 @@ function render(time) {
     
     // Fingers crossed this works
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-    gl.drawElements(gl.TRIANGLES, indeces.length, gl.UNSIGNED_SHORT, 0)
+    gl.drawElements(gl.TRIANGLES, cube.indeces.length, gl.UNSIGNED_SHORT, 0)
 }
 
 // Animation loop

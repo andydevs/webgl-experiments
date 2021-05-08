@@ -50,6 +50,11 @@ module.exports = {
                 test: /\.(jpg|jpeg|png)$/,
                 exclude: /node_modules/,
                 use: 'file-loader'
+            },
+            {
+                test: /\.(v|f)s$/,
+                exclude: /node_modules/,
+                use: 'raw-loader'
             }
         ]
     }
