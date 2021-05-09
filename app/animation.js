@@ -5,9 +5,13 @@
  * Created: 04 - 27 - 2021
  */
 import { mat4 } from "gl-matrix"
-import * as cube from './cubemodel'
-import vertexShaderCode from './cube.vs'
-import fragmentShaderCode from './cube.fs'
+import vertexShaderCode from './blue.vs'
+import fragmentShaderCode from './blue.fs'
+import mesh from './mesh.obj'
+
+// Number of components for each
+const VERT_NUM_COMPONENTS = 3
+const NOMR_NUM_COMPONENTS = 3
 
 /**
  * Animation roitine
@@ -58,13 +62,13 @@ export default function *routine(gl) {
     // Create buffers
     let positionBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.vertices), gl.STATIC_DRAW)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mesh.vertices), gl.STATIC_DRAW)
     let normalBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.normals), gl.STATIC_DRAW)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mesh.vertexNormals), gl.STATIC_DRAW)
     let indexBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cube.indeces), gl.STATIC_DRAW)
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(mesh.indices), gl.STATIC_DRAW)
 
     /**
      * Render step
@@ -100,12 +104,13 @@ export default function *routine(gl) {
         // Set position attribute
         // type: FLOAT, normalize: false, stride: 0, offset: 0
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-        gl.vertexAttribPointer(vertexPosition_, cube.numVertexDimensions, gl.FLOAT, false, 0, 0)
+        gl.vertexAttribPointer(vertexPosition_, VERT_NUM_COMPONENTS, gl.FLOAT, false, 0, 0)
         gl.enableVertexAttribArray(vertexPosition_)
 
         // Set normal attribute
+        // type: FLOAT, normalize: false, stride: 0, offset: 0
         gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer)
-        gl.vertexAttribPointer(vertexNormal_, cube.numNormalDimensions, gl.FLOAT, false, 0, 0)
+        gl.vertexAttribPointer(vertexNormal_, NOMR_NUM_COMPONENTS, gl.FLOAT, false, 0, 0)
         gl.enableVertexAttribArray(vertexNormal_)
 
         // Set uniforms
@@ -115,7 +120,7 @@ export default function *routine(gl) {
         
         // Fingers crossed this works
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-        gl.drawElements(gl.TRIANGLES, cube.indeces.length, gl.UNSIGNED_SHORT, 0)
+        gl.drawElements(gl.TRIANGLES, mesh.indices.length, gl.UNSIGNED_SHORT, 0)
     }
 
     // Animation loop

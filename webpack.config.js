@@ -55,6 +55,11 @@ module.exports = {
                 test: /\.(v|f)s$/,
                 exclude: /node_modules/,
                 use: 'raw-loader'
+            },
+            {
+                test: /\.obj$/,
+                exclude: /node_modules/,
+                use: 'webpack-obj-loader'
             }
         ]
     },
