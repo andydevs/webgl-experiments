@@ -49,10 +49,10 @@ export default function *routine(gl) {
 
         // Transform matrix
         const transformMatrix = mat4.create()
-        mat4.translate(transformMatrix, transformMatrix, [0, 0, -6])
-        mat4.rotate(transformMatrix, transformMatrix, time, [0.0, 0.0, 1.0])
+        mat4.translate(transformMatrix, transformMatrix, [0, 0, -50])
+        mat4.rotate(transformMatrix, transformMatrix, 0.75, [1.0, 0.0, 0.0])
         mat4.rotate(transformMatrix, transformMatrix, 0.7*time, [0.0, 1.0, 0.0])
-        mat4.rotate(transformMatrix, transformMatrix, 0.3*time, [1.0, 0.0, 0.0])
+        mat4.rotate(transformMatrix, transformMatrix, -Math.PI/2, [1.0, 0.0, 0.0])
 
         // Projection matrix
         const projectionMatrix = mat4.create()
