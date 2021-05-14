@@ -19,8 +19,7 @@ const NOMR_NUM_COMPONENTS = 3
  * @param {WebGLContext} gl webgl context
  */
 export default function *routine(gl) {
-    // Initialize
-    let time = 0.0
+    console.log(mesh)
 
     // Compile vertex shader
     let vertexShader = gl.createShader(gl.VERTEX_SHADER)
@@ -91,6 +90,7 @@ export default function *routine(gl) {
         mat4.translate(transformMatrix, transformMatrix, [0, 0, -6])
         mat4.rotate(transformMatrix, transformMatrix, time, [0.0, 0.0, 1.0])
         mat4.rotate(transformMatrix, transformMatrix, 0.7*time, [0.0, 1.0, 0.0])
+        mat4.rotate(transformMatrix, transformMatrix, 0.3*time, [1.0, 0.0, 0.0])
 
         // Projection matrix
         const projectionMatrix = mat4.create()
@@ -124,7 +124,8 @@ export default function *routine(gl) {
     }
 
     // Animation loop
-    // Render and update
+    // Render and update time
+    let time = 0.0
     while (true) {
         render(time)
         time += 0.01
